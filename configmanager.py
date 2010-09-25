@@ -3,6 +3,7 @@ import cm_menu
 import cm_tui
 import cm_plugin
 import cm_parser
+import cm_log
 
 __author__ = 'BlackMamba'
 __version__ = '0.1.1'
@@ -10,6 +11,7 @@ __version__ = '0.1.1'
 class ConfigManager:
 
 	def __init__(self):
+		self._logger = cm_log.getLogger('configmanager')
 		self._b3Dir = None
 		self._b3Confdir = None
 		self._b3xml = None
@@ -26,7 +28,7 @@ class ConfigManager:
 				print(self.usage())
 				sys.exit(0)
 			elif opt == 'config-dir':
-				self._b3dir = arg
+				self._b3Dir = arg
 			elif opt in ['-c', '--config-file']:
 				self._b3xml = arg
 		if len(args) != 1:
@@ -37,9 +39,24 @@ class ConfigManager:
 			self._b3Confdir = self._b3Dir+'/conf'
 		if self._b3xml is None:
 			self._b3xml = self._b3Confdir+'/b3.xml'
+		if not os.path.exists(self._b3Dir):
+			print('Could not find b3. Use option -h to get more informations.')
+			self._logger.error('Could not find b3. Given path: '+self._b3Dir)
+			sys.exit(0)
+		if not os.path.exists(self._b3Confdir):
+			print('Could not find path for the configuration files. Use option --config-dir. To get more informations use option -h.')
+			self._logger.error('Could not find configuration directory. Given path: '+self._b3Confdir)
+			sys.exit(0)
 		if not os.path.exists(self._b3xml) or not os.path.isfile(self._b3xml):
 			print('Could not open main configuration file. Use option -c to identify the configuration file of b3. Use option -h to get more informations.')
+			self._logger.error('Could not find b3.xml. Given file: '+self._b3xml)
 			sys.exit(0)
+		self._b3Dir = os.path.abspath(self._b3Dir)
+		self._b3Confdir = os.path.abspath(self._b3Confdir)
+		self._b3xml = os.path.abspath(self._b3xml)
+		self._logger.debug('B3 directory: '+self._b3Dir)
+		self._logger.debug('Configuration directory: '+self._b3Confdir)
+		self._logger.debug('b3.xml: '+self._b3xml)
 		self._b3parser = cm_parser.Parser()
 		self._b3parser.loadFile(self._b3xml)
 		self._ui = cm_tui.TUI()

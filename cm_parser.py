@@ -1,11 +1,11 @@
 import xml.dom.minidom
 import cm_plugin
-import logging, cm_logvar
+import cm_log
 
 class Parser:
 
 	def __init__(self):
-		self._logger = cm_logvar.getLogger('cm_parser:Parser')
+		self._logger = cm_log.getLogger('cm_parser')
 	
 	def loadFile(self, file):
 		self._logger.info('Reading file '+file)
