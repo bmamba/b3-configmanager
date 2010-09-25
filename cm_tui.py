@@ -31,6 +31,8 @@ class TUI:
 			else:
 				self._currentMenu = self._currentMenu.getParent()
 				self._showMenu()
+		else:
+			self._keyListener(key)
 
 	def start(self):
 		loop = urwid.MainLoop(self._frame, self._palette, unhandled_input=self.unhandled)
@@ -77,9 +79,53 @@ class TUI:
 			menu = self._currentMenu.getParent().getMenuByText(button.get_label())
 		self._frame.footer = urwid.AttrWrap(urwid.Text(menu.getText()), 'header')
 		if len(menu.getSubmenus()) == 0:
+			self._currentMenu = menu
 			menu.getButtonFunction()(menu)
 		else:
 			self._currentMenu = menu
 			self._showMenu()
 
 
+class Page:
+
+	def __init__(self, title):
+		self._blank = urwid.Divider()
+		self._lengthText = 27
+		self._widthField = 50
+		self._edit = None
+		self._page = [
+			self._blank,
+			urwid.Text(('important',title)),
+		]
+
+	def _addSpaces(self, text):
+		if self._lengthText-len(text)>0:
+			text += " "*(self._lengthText-len(text))
+		return text
+
+	def getPage(self):
+		return urwid.ListBox(urwid.SimpleListWalker(self._page))
+
+	def addInsertField(self, text, value = '', section = None):
+		edit = urwid.Edit(('editcp',self._addSpaces(text)),value)
+		if self._edit is None:
+			self._edit = {}
+		if section is None:
+			self._edit[text] = edit
+		else:
+			if not self._edit.has_key(section):
+				self._edit[section] = {}
+			self._edit[section][text] = edit
+		self._page.extend([
+			self._blank,
+			urwid.Padding(urwid.AttrWrap(edit,'editbx', 'editfc'),width=self._widthField+self._lengthText)
+		])
+
+	def getInsertValues(self):
+		return self._edit
+
+	def addHeader(self, header):
+		self._page.extend([
+			self._blank,
+			urwid.Text(('important', header))
+		])
