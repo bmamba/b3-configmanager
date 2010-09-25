@@ -1,14 +1,24 @@
+import os
+import sys
 import cm_menu
 import cm_tui
+import cm_plugin
+import cm_parser
 
 class ConfigManager:
 
 	def __init__(self):
+		self._b3xml = 'b3.xml'
+		if not os.path.exists(self._b3xml) or not os.path.isfile(self._b3xml):
+			print('Could not open main configuration file')
+			sys.exit(-1)
+		self._b3parser = cm_parser.Parser()
+		self._b3parser.loadFile(self._b3xml)
 		self._ui = cm_tui.TUI()
 		self._ui.setHeader("ConfigManager")
-		self._ui.setKeyListener(self._keylistener)
+		self._ui.setKeyListener(self._keyListener)
 
-	def _keylistener(self,key):
+	def _keyListener(self,key):
 		if key == 'esc':
 			self._ui.exit()
 
@@ -27,6 +37,14 @@ class ConfigManager:
 		menu = cm_menu.Menu()
 		menu.setText('Configure plugins')
 		menu.setButtonFunction(self._menuListener)
+
+		plugins = self._b3parser.getPlugins()
+		for plugin in plugins:
+			pmenu = cm_menu.Menu()
+			pmenu.setText(plugin.getName())
+			pmenu.setButtonFunction(self._menuListener)
+			menu.addSubmenu(pmenu)
+
 		self._mainmenu.addSubmenu(menu)
 
 		menu = cm_menu.Menu()

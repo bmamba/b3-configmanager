@@ -22,10 +22,15 @@ class TUI:
 		self.setBody(urwid.Filler(urwid.Text("")))
 
 	def setKeyListener(self,listener):
-		self._keylistener = listener
+		self._keyListener = listener
 
 	def unhandled(self,key):
-		self._keylistener(key)
+		if key == 'esc':
+			if self._currentMenu.getParent() is None:
+				self._keyListener(key)
+			else:
+				self._currentMenu = self._currentMenu.getParent()
+				self._showMenu()
 
 	def start(self):
 		loop = urwid.MainLoop(self._frame, self._palette, unhandled_input=self.unhandled)
@@ -66,8 +71,10 @@ class TUI:
 		else:
 			self._frame.footer = urwid.AttrWrap(urwid.Text("Press <ESC> to go up"), 'header')
 	
-	def _menuListener(self, button):
+	def _menuListener(self, button, st = ""):
 		menu = self._currentMenu.getMenuByText(button.get_label())
+		if menu is None and self._currentMenu.getParent() is not None:
+			menu = self._currentMenu.getParent().getMenuByText(button.get_label())
 		self._frame.footer = urwid.AttrWrap(urwid.Text(menu.getText()), 'header')
 		if len(menu.getSubmenus()) == 0:
 			menu.getButtonFunction()(menu)
