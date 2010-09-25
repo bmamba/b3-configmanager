@@ -5,7 +5,7 @@ import cm_plugin
 import cm_parser
 
 __author__ = 'BlackMamba'
-__version__ = '0.1.0'
+__version__ = '0.1.1'
 
 class ConfigManager:
 
@@ -25,36 +25,34 @@ class ConfigManager:
 			elif opt in ['--help','-h']:
 				print(self.usage())
 				sys.exit(0)
-			elif opt == '--b3':
-				self._b3Dir = arg
 			elif opt == 'config-dir':
 				self._b3dir = arg
 			elif opt in ['-c', '--config-file']:
 				self._b3xml = arg
-		if self._b3Dir is None:
-			self._b3Dir = '.'
+		if len(args) != 1:
+			print(self.usage())
+			sys.exit(0)
+		self._b3Dir = args[0]+'/b3'
 		if self._b3Confdir is None:
 			self._b3Confdir = self._b3Dir+'/conf'
 		if self._b3xml is None:
 			self._b3xml = self._b3Confdir+'/b3.xml'
 		if not os.path.exists(self._b3xml) or not os.path.isfile(self._b3xml):
 			print('Could not open main configuration file. Use option -c to identify the configuration file of b3. Use option -h to get more informations.')
-			sys.exit(-1)
+			sys.exit(0)
 		self._b3parser = cm_parser.Parser()
 		self._b3parser.loadFile(self._b3xml)
-		self._b3extconf = self._b3parser.getExtconfPath()
 		self._ui = cm_tui.TUI()
 		self._ui.setHeader("ConfigManager")
 		self._ui.setKeyListener(self._keyListener)
 
 	def usage(self):
-		text = "Usage: python configmanager.py [OPTION...]\n"
-		text += " --b3=DIR                define the place where b3 is\n"
-		text += "                         if not given DIR=.\n"
+		text = "Usage: python configmanager.py [OPTIONS...] B3DIR\n\n"
+		text += " B3DIR                   define the place where b3 is\n\n"
 		text += " --config-dir=CONFDIR    define the place where the configuration is\n"
-		text += "                         if not given CONFDIR=DIR/conf\n"
+		text += "                         if not given: CONFDIR=B3DIR/b3/conf\n"
 		text += " -c, --config-file=FILE  define main configuration file\n"
-		text += "                         if not given FILE=CONFDIR/b3.xml\n"
+		text += "                         if not given: FILE=CONFDIR/b3.xml\n"
 		text += " -h, --help              show this text\n"
 		text += " -v, --version           show the version\n"
 		return text
@@ -102,7 +100,7 @@ class ConfigManager:
 
 	def _confPluginListener(self, menu):
 		self._ui.setFooter(menu.getText())
-		page = cm_tui.Page(menu.getText())
+		page = cm_tui.Page(self._ui, 'Configure '+menu.getText())
 		parser = cm_parser.Parser()
 		plugin = self._plugins[menu.getText()]
 		file = plugin.getConfig().replace('@conf',self._b3Confdir)
@@ -110,12 +108,27 @@ class ConfigManager:
 		parser.loadFile(file)
 		pluginConf = parser.getPluginConf()
 		for section in pluginConf:
+			page.addBlank()
 			page.addHeader(section)
 			for setting in pluginConf[section]:
-				page.addInsertField(setting, pluginConf[section][setting], section)
+				page.addBlank()
+				comment = pluginConf[section][setting]['comment']
+				if comment != '':
+					comment = comment.expandtabs(1).strip()
+					page.addComment(comment)
+				page.addInsertField(setting, pluginConf[section][setting]['value'], section)
+		page.addBlank()
+		page.addSaveButton(self._savePluginConfiguration)
+		page.addBlank()
 		self._page = page
 		self._ui.setBody(page.getPage())
-	
+		self._pluginParser = parser
+
+	def _savePluginConfiguration(self):
+		self._ui.setFooter('save')
+		self._pluginParser.changePluginConfiguration(self._page.getInsertValues())
+		self._pluginParser.saveFile()
+
 	def exit(self, button = None):
 		self._ui.exit()
 

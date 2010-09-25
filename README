@@ -1,0 +1,3 @@
+With this tool you can configure b3 bot without changing any xml file by yourselfe. Just call 'python configmanager.py B3DIR', where B3Dir is the directory where the bot is located.
+
+The current version can be found on github: http://github.com/bmamba/b3-configmanager

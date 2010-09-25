@@ -85,10 +85,16 @@ class TUI:
 			self._currentMenu = menu
 			self._showMenu()
 
+	def showParentMenu(self):
+		if self._currentMenu.getParent() is not None:
+			self._currentMenu = self._currentMenu.getParent()
+			self._showMenu()
+
 
 class Page:
 
-	def __init__(self, title):
+	def __init__(self, tui, title):
+		self._tui = tui
 		self._blank = urwid.Divider()
 		self._lengthText = 27
 		self._widthField = 50
@@ -117,15 +123,43 @@ class Page:
 				self._edit[section] = {}
 			self._edit[section][text] = edit
 		self._page.extend([
-			self._blank,
 			urwid.Padding(urwid.AttrWrap(edit,'editbx', 'editfc'),width=self._widthField+self._lengthText)
 		])
 
 	def getInsertValues(self):
-		return self._edit
+		values = {}
+		for a in self._edit:
+			values[a] = {}
+			for b in self._edit[a]:
+				values[a][b] = {}
+				values[a][b]['value'] = self._edit[a][b].get_edit_text()
+		return values
+
+	def addComment(self, comment):
+		self._page.extend([
+			urwid.Text(comment)
+		])
 
 	def addHeader(self, header):
 		self._page.extend([
-			self._blank,
 			urwid.Text(('important', header))
 		])
+
+	def addBlank(self):
+		self._page.extend([
+			self._blank
+		])
+
+	def addSaveButton(self, saveListener):
+		self._page.extend([
+			urwid.GridFlow(
+			[urwid.AttrWrap(urwid.Button('Save', self._buttonConfigurationListener), 'buttn', 'buttnf'),
+			urwid.AttrWrap(urwid.Button('Cancel', self._buttonConfigurationListener), 'buttn', 'buttnf')]
+			,10,5,5,'center')
+		])
+		self._configurationSaveListener = saveListener
+
+	def _buttonConfigurationListener(self, button):
+		if button.get_label() == 'Save':
+			self._configurationSaveListener()
+		self._tui.showParentMenu()
