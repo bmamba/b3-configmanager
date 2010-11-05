@@ -6,7 +6,7 @@ import cm_parser
 import cm_log
 
 __author__ = 'BlackMamba'
-__version__ = '0.1.1'
+__version__ = '0.1'
 
 class ConfigManager:
 
@@ -87,7 +87,7 @@ class ConfigManager:
 
 		menu = cm_menu.Menu()
 		menu.setText('Configure main settings')
-		menu.setButtonFunction(self._menuListener)
+		menu.setButtonFunction(self._confPluginListener)
 		self._mainmenu.addSubmenu(menu)
 
 		menu = cm_menu.Menu()
@@ -115,25 +115,47 @@ class ConfigManager:
 		menu.setButtonFunction(self.exit)
 		self._mainmenu.addSubmenu(menu)
 
+
 	def _confPluginListener(self, menu):
 		self._ui.setFooter(menu.getText())
-		page = cm_tui.Page(self._ui, 'Configure '+menu.getText())
 		parser = cm_parser.Parser()
-		plugin = self._plugins[menu.getText()]
-		file = plugin.getConfig().replace('@conf',self._b3Confdir)
-		file = file.replace('@b3',self._b3Dir)
+		if menu.getText() == "Configure main settings":
+			page = cm_tui.Page(self._ui, menu.getText())
+			file = self._b3Confdir+'/b3.xml'
+			name = 'b3'
+		else:
+			page = cm_tui.Page(self._ui, 'Configure '+menu.getText())
+			plugin = self._plugins[menu.getText()]
+			file = plugin.getConfig().replace('@conf',self._b3Confdir)
+			file = file.replace('@b3',self._b3Dir)
+			name = menu.getText()
 		parser.loadFile(file)
+		parser.loadExtraFile('cm_conf/'+name+'.xml')
 		pluginConf = parser.getPluginConf()
+		pluginExtraConf = parser.getPluginExtraConf()
 		for section in pluginConf:
 			page.addBlank()
 			page.addHeader(section)
 			for setting in pluginConf[section]:
 				page.addBlank()
-				comment = pluginConf[section][setting]['comment']
+				try:
+					comment = pluginExtraConf[section][setting]['comment']
+				except:
+					comment = pluginConf[section][setting]['comment']
 				if comment != '':
 					comment = comment.expandtabs(1).strip()
 					page.addComment(comment)
-				page.addInsertField(setting, pluginConf[section][setting]['value'], section)
+				input = None
+				try:
+					input = pluginExtraConf[section][setting]['input']
+					if input['type'] == 'radiobutton':
+						for value in input['values'].keys():
+							page.addRadioButton(section, setting, input['values'][value], pluginConf[section][setting]['value'])
+					else:
+						raise
+				except:
+					page.addInsertField(setting, pluginConf[section][setting]['value'], section)
+
 		page.addBlank()
 		page.addSaveButton(self._savePluginConfiguration)
 		page.addBlank()

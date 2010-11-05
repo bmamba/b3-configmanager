@@ -1,5 +1,6 @@
 import urwid
 import cm_menu
+import cm_log
 
 class TUI:
 
@@ -94,11 +95,13 @@ class TUI:
 class Page:
 
 	def __init__(self, tui, title):
+		self._logger = cm_log.getLogger('cm_tui_Page')
 		self._tui = tui
 		self._blank = urwid.Divider()
 		self._lengthText = 27
 		self._widthField = 50
 		self._edit = None
+		self._radioGroup = {}
 		self._page = [
 			self._blank,
 			urwid.Text(('important',title)),
@@ -126,13 +129,43 @@ class Page:
 			urwid.Padding(urwid.AttrWrap(edit,'editbx', 'editfc'),width=self._widthField+self._lengthText)
 		])
 
+	def addRadioButton(self, section, name, value, selectedValue):
+		if self._radioGroup is None:
+			self._radioGroup = {}
+		if section not in self._radioGroup:
+			self._radioGroup[section] = {}
+		if name not in self._radioGroup[section]:
+			self._radioGroup[section][name] = []
+		rbutton = urwid.RadioButton(self._radioGroup[section][name],value)
+		if value == selectedValue:
+			rbutton.toggle_state()
+		self._page.extend([
+			urwid.Padding(urwid.AttrWrap(rbutton,'buttn','buttnf'),width=self._widthField,left=self._lengthText)
+		])
+
+
 	def getInsertValues(self):
 		values = {}
+
+		# Input
 		for a in self._edit:
 			values[a] = {}
 			for b in self._edit[a]:
 				values[a][b] = {}
 				values[a][b]['value'] = self._edit[a][b].get_edit_text()
+
+		# RadioButton
+		for section in self._radioGroup:
+			if section not in values:
+				values[section] = {}
+			for name in self._radioGroup[section]:
+				values[section][name] = {}
+				value = ''
+				for rbutton in self._radioGroup[section][name]:
+					if rbutton.get_state():
+						value = rbutton.get_label()
+				values[section][name]['value'] = value
+
 		return values
 
 	def addComment(self, comment):
