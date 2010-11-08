@@ -4,6 +4,7 @@ import cm_tui
 import cm_plugin
 import cm_parser
 import cm_log
+import cm_conf
 
 __author__ = 'BlackMamba'
 __version__ = '0.1'
@@ -15,8 +16,10 @@ class ConfigManager:
 		self._b3Dir = None
 		self._b3Confdir = None
 		self._b3xml = None
+		conf = cm_conf.Conf()
+		conf.loadFile('cm_conf.xml')
 		try:
-			opts, args = getopt.getopt(sys.argv[1:],'hvc:', ['help', 'version', 'b3=', 'config-file=', 'config-dir='])
+			opts, args = getopt.getopt(sys.argv[1:],'hvc:', ['help', 'version', 'b3=', 'config-file=', 'config-dir=', 'b3-dir='])
 		except getopt.GetoptError, err:
 			print str(err)
 			sys.exit(1)
@@ -27,18 +30,27 @@ class ConfigManager:
 			elif opt in ['--help','-h']:
 				print(self.usage())
 				sys.exit(0)
-			elif opt == 'config-dir':
+			elif opt == '--b3-dir':
 				self._b3Dir = arg
+			elif opt == '--config-dir':
+				self._ConfDir = arg
 			elif opt in ['-c', '--config-file']:
 				self._b3xml = arg
-		if len(args) != 1:
-			print(self.usage())
-			sys.exit(0)
-		self._b3Dir = args[0]+'/b3'
+		if self._b3Dir is None:
+			self._b3Dir = conf.getSet('b3dir')
+			if self._b3Dir is None:
+				self._logger.debug('b3Dir is None')
+				print(self.usage())
+				sys.exit(0)
+		self._b3Dir = self._b3Dir+'/b3'
 		if self._b3Confdir is None:
-			self._b3Confdir = self._b3Dir+'/conf'
+			self._b3Confdir = conf.getSet('b3confdir')
+			if self._b3Confdir is None:
+				self._b3Confdir = self._b3Dir+'/conf'
 		if self._b3xml is None:
-			self._b3xml = self._b3Confdir+'/b3.xml'
+			self._b3xml = conf.getSet('b3xml')
+			if self._b3xml is None:
+				self._b3xml = self._b3Confdir+'/b3.xml'
 		if not os.path.exists(self._b3Dir):
 			print('Could not find b3. Use option -h to get more informations.')
 			self._logger.error('Could not find b3. Given path: '+self._b3Dir)
@@ -52,11 +64,15 @@ class ConfigManager:
 			self._logger.error('Could not find b3.xml. Given file: '+self._b3xml)
 			sys.exit(0)
 		self._b3Dir = os.path.abspath(self._b3Dir)
+		conf.setSet("b3dir",self._b3Dir)
 		self._b3Confdir = os.path.abspath(self._b3Confdir)
+		conf.setSet("b3confdir",self._b3Confdir)
 		self._b3xml = os.path.abspath(self._b3xml)
+		conf.setSet("b3xml", self._b3xml)
 		self._logger.debug('B3 directory: '+self._b3Dir)
 		self._logger.debug('Configuration directory: '+self._b3Confdir)
 		self._logger.debug('b3.xml: '+self._b3xml)
+		conf.saveFile()
 		self._b3parser = cm_parser.Parser()
 		self._b3parser.loadFile(self._b3xml)
 		self._ui = cm_tui.TUI()
@@ -64,12 +80,15 @@ class ConfigManager:
 		self._ui.setKeyListener(self._keyListener)
 
 	def usage(self):
-		text = "Usage: python configmanager.py [OPTIONS...] B3DIR\n\n"
-		text += " B3DIR                   define the place where b3 is\n\n"
+		text = "Usage: python configmanager.py [OPTIONS...]\n\n"
+		text += " --b3-dir=B3DIR          define the place where b3 is\n"
+		text += "                         if not given: B3DIR from last time\n"
 		text += " --config-dir=CONFDIR    define the place where the configuration is\n"
-		text += "                         if not given: CONFDIR=B3DIR/b3/conf\n"
+		text += "                         if not given: CONFDIR from last time\n"
+		text += "                         or CONFDIR=B3DIR/b3/conf\n"
 		text += " -c, --config-file=FILE  define main configuration file\n"
-		text += "                         if not given: FILE=CONFDIR/b3.xml\n"
+		text += "                         if not given: FILE from last time\n"
+		text += "                         or FILE=CONFDIR/b3.xml\n"
 		text += " -h, --help              show this text\n"
 		text += " -v, --version           show the version\n"
 		return text
@@ -111,10 +130,58 @@ class ConfigManager:
 		self._mainmenu.addSubmenu(menu)
 
 		menu = cm_menu.Menu()
+		menu.setText('Configure Database')
+		menu.setButtonFunction(self._confDatabase)
+		self._mainmenu.addSubmenu(menu)
+
+
+		menu = cm_menu.Menu()
 		menu.setText('Quit')
 		menu.setButtonFunction(self.exit)
 		self._mainmenu.addSubmenu(menu)
 
+
+	def _confDatabase(self, menu):
+		parser = cm_parser.Parser()
+		page = cm_tui.Page(self._ui, menu.getText())
+		file = self._b3Confdir+'/b3.xml'
+		parser.loadFile(file)
+		pluginConf = parser.getPluginConf()
+		mysql = parser.getSetData("b3","database")
+		text = mysql.split('/')
+		connection = text[2]
+		database = text[3]
+		text = connection.split('@')
+		if len(text)>1:
+			userpw = text[0]
+			host = text[1]
+			text = userpw.split(':')
+			user = text[0]
+			if len(text)>1:
+				password = text[1]
+			else:
+				password = ''
+		else:
+			user = ''
+			password = ''
+			host = text[0]
+		text = host.split(':')
+		if len(text)>1:
+			host = text[0]
+			port = text[1]
+		else:
+			port = ''
+		page.addBlank()
+		page.addInsertField("Host:",host)
+		page.addInsertField("Port:",port)
+		page.addInsertField("Database name:",database)
+		page.addInsertField("User:",user)
+		page.addInsertField("Password:",password)
+		page.addBlank()
+		page.addSaveButton(self._saveDatabaseConfiguration)
+		self._page = page
+		self._ui.setBody(page.getPage())
+		self._pluginParser = parser
 
 	def _confPluginListener(self, menu):
 		self._ui.setFooter(menu.getText())
@@ -167,6 +234,29 @@ class ConfigManager:
 		self._ui.setFooter('save')
 		self._pluginParser.changePluginConfiguration(self._page.getInsertValues())
 		self._pluginParser.saveFile()
+
+	def _saveDatabaseConfiguration(self):
+		self._ui.setFooter('save')
+		values = self._page.getInsertValues()
+		host = values['Host:']['value']
+		port = values['Port:']['value']
+		dbname = values['Database name:']['value']
+		user = values['User:']['value']
+		password = values['Password:']['value']
+		mysql = 'mysql://'
+		if user != '':
+			mysql += user
+			if password != '':
+				mysql += ':'+password
+			mysql += '@'
+		mysql += host
+		if port != '':
+			mysql += ':'+port
+		mysql += '/'+dbname
+		self._logger.debug('mysql connection string: '+mysql)
+		parser = self._pluginParser
+		parser.setSetData("b3","database",mysql)
+		parser.saveFile()
 
 	def exit(self, button = None):
 		self._ui.exit()

@@ -134,6 +134,7 @@ class Page:
 			self._radioGroup = {}
 		if section not in self._radioGroup:
 			self._radioGroup[section] = {}
+			self.addText(section)
 		if name not in self._radioGroup[section]:
 			self._radioGroup[section][name] = []
 		rbutton = urwid.RadioButton(self._radioGroup[section][name],value)
@@ -144,15 +145,39 @@ class Page:
 		])
 
 
+	def addComment(self, comment):
+		self._page.extend([
+			urwid.Text(comment)
+		])
+
+	def addText(self, comment):
+		self._page.extend([
+			urwid.Text(comment)
+		])
+
+	def addHeader(self, header):
+		self._page.extend([
+			urwid.Text(('important', header))
+		])
+
+	def addBlank(self):
+		self._page.extend([
+			self._blank
+		])
+
+
 	def getInsertValues(self):
 		values = {}
 
 		# Input
 		for a in self._edit:
 			values[a] = {}
-			for b in self._edit[a]:
-				values[a][b] = {}
-				values[a][b]['value'] = self._edit[a][b].get_edit_text()
+			if type(self._edit[a]).__name__ == 'Edit':
+				values[a]['value'] = self._edit[a].get_edit_text()
+			else:
+				for b in self._edit[a]:
+					values[a][b] = {}
+					values[a][b]['value'] = self._edit[a][b].get_edit_text()
 
 		# RadioButton
 		for section in self._radioGroup:
@@ -167,21 +192,6 @@ class Page:
 				values[section][name]['value'] = value
 
 		return values
-
-	def addComment(self, comment):
-		self._page.extend([
-			urwid.Text(comment)
-		])
-
-	def addHeader(self, header):
-		self._page.extend([
-			urwid.Text(('important', header))
-		])
-
-	def addBlank(self):
-		self._page.extend([
-			self._blank
-		])
 
 	def addSaveButton(self, saveListener):
 		self._page.extend([

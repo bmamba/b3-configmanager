@@ -43,6 +43,34 @@ class Parser:
 						return section
 		return None
 
+	def getSet(self, section, section_name, name):
+		section_node = self.getSection(section, section_name)
+		if section_node is None:
+			return None
+		for node in section_node.childNodes:
+			if node.nodeType == node.ELEMENT_NODE:
+				if node.getAttribute('name') == name:
+					return node
+
+	
+	def getSetData(self, section_name, name):
+		node = self.getSet("settings", section_name, name)
+		if node is None:
+			return None
+		for textnode in node.childNodes:
+			if textnode.nodeType == textnode.TEXT_NODE:
+				return textnode.data	
+
+
+	def setSetData(self, section_name, name, value):
+		node = self.getSet("settings", section_name, name)
+		if node is None or value is None:
+			return None
+		for textnode in node.childNodes:
+			if textnode.nodeType == textnode.TEXT_NODE:
+				textnode.data = value
+
+
 	def getPlugins(self):
 		psection = self.getSection('plugins')
 		if psection is None:
