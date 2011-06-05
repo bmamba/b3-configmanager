@@ -1,0 +1,45 @@
+<?xml version='1.0'?>
+
+<configuration>
+	<settings name="server">
+		<set name="punkbuster">
+			<input type="radiobutton">
+				<values name="on" value="on"/>
+				<values name="off" value ="off"/>
+			</input>
+		</set>
+	</settings>
+	<settings name="autodoc">
+		<set name="type">
+			<input type="radiobutton">
+				<values name="html" value="html"/>
+				<values name="htmltable" value="htmltable"/>
+				<values name="xml" value="xml"/>
+			</input>
+		</set>
+	</settings>
+	<settings name="b3">
+		<set name="log_level">
+			<input type="radiobutton">
+				<values name="9" value="9"/>
+				<values name="10" value="10"/>
+				<values name="21" value="21"/>
+				<values name="22" value="22"/>
+			</input>
+		</set>
+		<set name="parser">
+			<input type="radiobutton">
+				<values name="cod" value="cod"/>
+				<values name="cod2" value="cod2"/>
+				<values name="cod4" value="cod4"/>
+				<values name="cod5" value="cod5"/>
+				<values name="iourt41" value="iourt41"/>
+				<values name="etpro" value="etpro"/>
+				<values name="wop" value="wop"/>
+				<values name="smg" value="smg"/>
+				<values name="bfbc2" value="bfbc2"/>
+			</input>
+		</set>
+	</settings>
+
+</configuration>
