@@ -93,7 +93,7 @@ class ConfigManager:
 			self._logger.error('Could not find b3. Given path: '+self._b3Dir)
 			sys.exit(0)
 		if not os.path.exists(self._b3Confdir):
-			print('Could not find path for the configuration files. Use option --config-dir. To get more informations use option -h.')
+			print('Could not find path for the configuration files. Use option --b3-dir (or --config-dir directly). To get more informations use option -h.')
 			self._logger.error('Could not find configuration directory. Given path: '+self._b3Confdir)
 			sys.exit(0)
 		if not os.path.exists(self._b3xml) or not os.path.isfile(self._b3xml):

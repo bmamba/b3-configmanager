@@ -5,14 +5,17 @@ class Conf:
 
 	def __init__(self):
 		self._logger = cm_log.getLogger('cm_conf')
+		self._file = None
+		#at least create empty conf
+		self._xml = xml.dom.minidom.parseString('<configuration/>')
 	
 	def loadFile(self, file):
 		self._logger.info('Reading file '+file)
+		self._file = file
 		try:
 			filehandle = open(file, 'r')
 			self._xml = xml.dom.minidom.parse(filehandle)
 			filehandle.close()
-			self._file = file
 		except IOError, err:
 			self._logger.warning(str(err))
 
@@ -44,7 +47,7 @@ class Conf:
 
 	def getSet(self, name):
 		if self._file is None:
-			self._logger.warning('No file was loaded')
+			self._logger.error('File is not given')
 			return None
 		if name is None:
 			self._logger.debug('No name is given')
@@ -64,8 +67,10 @@ class Conf:
 
 	def setSet(self, name, setting):
 		if self._file is None:
+			self._logger.error('File is not given')
 			return None
 		if name is None:
+			self._logger.debug('No name is given')
 			return None
 		if setting is None:
 			setting = ''
