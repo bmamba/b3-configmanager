@@ -22,7 +22,7 @@ class ConfigManager:
 		conf = cm_conf.Conf()
 		conf.loadFile('cm_conf.xml')
 		try:
-			opts, args = getopt.getopt(sys.argv[1:],'hvc:', ['help', 'version', 'b3=', 'config-file=', 'config-dir=', 'b3-dir=', 'extconf-dir='])
+			opts, args = getopt.getopt(sys.argv[1:],'hvc:', ['help', 'version', 'b3=', 'config-file=', 'config-dir=', 'b3-dir=', 'extplugin-dir=', 'extconf-dir='])
 		except getopt.GetoptError, err:
 			print str(err)
 			sys.exit(1)
