@@ -26,19 +26,39 @@ class Conf:
 		except IOError, err:
 			self._logger.warning(str(err))
 
+	def removeSet(self, name):
+		if self._file is None:
+			self._logger.warning('No file was loaded')
+			return
+		if name is None:
+			self._logger.debug('No name is given')
+			return
+		configurations = self._xml.getElementsByTagName('configuration')
+		for configuration in configurations:
+			sets = configuration.getElementsByTagName('set')
+			for set in sets:
+				if set.nodeType == set.ELEMENT_NODE:
+					if set.getAttribute('name') == name:
+						self._logger.debug('Removing '+name)
+						configuration.removeChild(set)
 
 	def getSet(self, name):
 		if self._file is None:
+			self._logger.warning('No file was loaded')
 			return None
 		if name is None:
+			self._logger.debug('No name is given')
 			return None
-		configuration = self._xml.getElementsByTagName('configuration')
-		for set in configuration:
-			if set.nodeType == set.ELEMENT_NODE:
-				if set.getAttribute('name') == name:
-					for textnode in set.childNodes:
-						if textnode.nodeType == textnode.TEXT_NODE:
-							return textnode.data
+		configurations = self._xml.getElementsByTagName('configuration')
+		for configuration in configurations:
+			sets = configuration.getElementsByTagName('set')
+			for set in sets:
+				if set.nodeType == set.ELEMENT_NODE:
+					if set.getAttribute('name') == name:
+						for textnode in set.childNodes:
+							if textnode.nodeType == textnode.TEXT_NODE:
+								self._logger.debug('Find configuration for '+name+': '+textnode.data)
+								return textnode.data
 		return None
 
 

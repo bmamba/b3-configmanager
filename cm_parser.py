@@ -30,7 +30,7 @@ class Parser:
 
 	def saveFile(self):
 		self._logger.info('Writing xml into '+self._file)
-		filehandle = open(self._file+'.new', 'w')
+		filehandle = open(self._file, 'w')
 		filehandle.write(self._xml.toxml())
 		filehandle.close()
 

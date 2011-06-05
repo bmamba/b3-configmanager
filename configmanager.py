@@ -46,11 +46,28 @@ class ConfigManager:
 		if self._b3Dir is None:
 			self._b3Dir = conf.getSet('b3dir')
 			if self._b3Dir is None:
-				self._logger.debug('b3Dir is None')
+				self._logger.debug('b3Dir not given and not find in configuration file')
 				print(self.usage())
 				sys.exit(0)
 		else:
 			self._b3Dir = self._b3Dir+'/b3'
+			self._b3Dir = os.path.expanduser(self._b3Dir)
+			self._b3Dir = os.path.abspath(self._b3Dir)
+			if not os.path.exists(self._b3Dir):
+				print('Could not find b3. Use option -h to get more informations.')
+				self._logger.error('Could not find b3. Given path: '+self._b3Dir)
+				sys.exit(0)
+
+			b3Dir = conf.getSet('b3dir')
+			if self._b3Dir != b3Dir:
+				#resetting paths if main path was changed
+				self._logger.debug('Removing paths from config since main path was changed')
+				conf.removeSet('b3dir')
+				conf.removeSet('b3confdir')
+				conf.removeSet('b3xml')
+				conf.removeSet('b3pluginsdir')
+				conf.removeSet('b3extdir')
+				conf.removeSet('b3extconfdir')
 		if self._b3Confdir is None:
 			self._b3Confdir = conf.getSet('b3confdir')
 			if self._b3Confdir is None:
