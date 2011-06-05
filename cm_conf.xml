@@ -1,2 +1,2 @@
-<configuration>
-</configuration>
+<?xml version="1.0" ?><configuration>
+<set name="b3dir">/home/urt/github/b3-configmanager/b3</set><set name="b3confdir">/home/urt/github/b3-configmanager/b3/conf</set><set name="b3xml">/home/urt/github/b3-configmanager/b3/conf/b3.xml</set><set name="b3pluginsdir">/home/urt/github/b3-configmanager/b3/plugins</set><set name="b3extdir">/home/urt/github/b3-configmanager/b3/extplugins</set><set name="b3extconfdir">/home/urt/github/b3-configmanager/b3/extplugins/conf</set></configuration>

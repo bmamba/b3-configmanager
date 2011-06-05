@@ -16,10 +16,13 @@ class ConfigManager:
 		self._b3Dir = None
 		self._b3Confdir = None
 		self._b3xml = None
+		self._b3PluginsDir = None
+		self._b3ExtDir = None
+		self._b3ExtConfDir = None
 		conf = cm_conf.Conf()
 		conf.loadFile('cm_conf.xml')
 		try:
-			opts, args = getopt.getopt(sys.argv[1:],'hvc:', ['help', 'version', 'b3=', 'config-file=', 'config-dir=', 'b3-dir='])
+			opts, args = getopt.getopt(sys.argv[1:],'hvc:', ['help', 'version', 'b3=', 'config-file=', 'config-dir=', 'b3-dir=', 'extconf-dir='])
 		except getopt.GetoptError, err:
 			print str(err)
 			sys.exit(1)
@@ -36,13 +39,18 @@ class ConfigManager:
 				self._ConfDir = arg
 			elif opt in ['-c', '--config-file']:
 				self._b3xml = arg
+			elif opt == '--extplugin-dir':
+				self._b3ExtDir = arg
+			elif opt == '--extconf-dir':
+				self._b3ExtConfDir = arg
 		if self._b3Dir is None:
 			self._b3Dir = conf.getSet('b3dir')
 			if self._b3Dir is None:
 				self._logger.debug('b3Dir is None')
 				print(self.usage())
 				sys.exit(0)
-		self._b3Dir = self._b3Dir+'/b3'
+		else:
+			self._b3Dir = self._b3Dir+'/b3'
 		if self._b3Confdir is None:
 			self._b3Confdir = conf.getSet('b3confdir')
 			if self._b3Confdir is None:
@@ -51,6 +59,18 @@ class ConfigManager:
 			self._b3xml = conf.getSet('b3xml')
 			if self._b3xml is None:
 				self._b3xml = self._b3Confdir+'/b3.xml'
+		if self._b3PluginsDir is None:
+			self.b3PluginsDir = conf.getSet('b3pluginsdir')
+			if self._b3PluginsDir is None:
+				self._b3PluginsDir = self._b3Dir+'/plugins'
+		if self._b3ExtDir is None:
+			self.b3ExtDir = conf.getSet('b3extdir')
+			if self._b3ExtDir is None:
+				self._b3ExtDir = self._b3Dir+'/extplugins'
+		if self._b3ExtConfDir is None:
+			self.b3ExtConfDir = conf.getSet('b3extconfdir')
+			if self._b3ExtConfDir is None:
+				self._b3ExtConfDir = self._b3ExtDir+'/conf'
 		if not os.path.exists(self._b3Dir):
 			print('Could not find b3. Use option -h to get more informations.')
 			self._logger.error('Could not find b3. Given path: '+self._b3Dir)
@@ -69,9 +89,18 @@ class ConfigManager:
 		conf.setSet("b3confdir",self._b3Confdir)
 		self._b3xml = os.path.abspath(self._b3xml)
 		conf.setSet("b3xml", self._b3xml)
+		self._b3PluginsDir = os.path.abspath(self._b3PluginsDir)
+		conf.setSet("b3pluginsdir", self._b3PluginsDir)
+		self._b3ExtDir = os.path.abspath(self._b3ExtDir)
+		conf.setSet("b3extdir", self._b3ExtDir)
+		self._b3ExtConfDir = os.path.abspath(self._b3ExtConfDir)
+		conf.setSet("b3extconfdir", self._b3ExtConfDir)
 		self._logger.debug('B3 directory: '+self._b3Dir)
 		self._logger.debug('Configuration directory: '+self._b3Confdir)
 		self._logger.debug('b3.xml: '+self._b3xml)
+		self._logger.debug('Internal plugins: '+self._b3PluginsDir)
+		self._logger.debug('External plugins: '+self._b3ExtDir)
+		self._logger.debug('Configuration directory for external plugins: '+self._b3ExtConfDir)
 		conf.saveFile()
 		self._b3parser = cm_parser.Parser()
 		self._b3parser.loadFile(self._b3xml)
@@ -81,16 +110,25 @@ class ConfigManager:
 
 	def usage(self):
 		text = "Usage: python configmanager.py [OPTIONS...]\n\n"
-		text += " --b3-dir=B3DIR          define the place where b3 is\n"
-		text += "                         if not given: B3DIR from last time\n"
-		text += " --config-dir=CONFDIR    define the place where the configuration is\n"
-		text += "                         if not given: CONFDIR from last time\n"
-		text += "                         or CONFDIR=B3DIR/b3/conf\n"
-		text += " -c, --config-file=FILE  define main configuration file\n"
-		text += "                         if not given: FILE from last time\n"
-		text += "                         or FILE=CONFDIR/b3.xml\n"
-		text += " -h, --help              show this text\n"
-		text += " -v, --version           show the version\n"
+		text += " --b3-dir=B3DIR            define the place where b3 is\n"
+		text += "                           if not given: B3DIR from last time\n"
+		text += " --config-dir=CONFDIR      define the place where the configuration is\n"
+		text += "                           if not given: CONFDIR from last time\n"
+		text += "                           or CONFDIR=B3DIR/b3/conf\n"
+		text += " --plugin-dir=PLUGINDIR    define the place of the internal plugins\n"
+		text += "                           if not given: PLUGINDIR from last time\n"
+		text += "                           or PLUGINDIR=B3DIR/b3/plugins\n"
+		text += " -c, --config-file=FILE    define main configuration file\n"
+		text += "                           if not given: FILE from last time\n"
+		text += "                           or FILE=CONFDIR/b3.xml\n"
+		text += " --extplugin-dir=EXTDIR    define the place of the external plugins\n"
+		text += "                           if not given: EXTDIR from last time\n"
+		text += "                           or EXTDIR=B3DIR/b3/extplugins\n"
+		text += " --extconf-dir=EXTCONFDIR  define the place of the configuration of external plugins\n"
+		text += "                           if not given: FILE from last time\n"
+		text += "                           or EXTCONFDIR=EXTDIR/conf\n"
+		text += " -h, --help                show this text\n"
+		text += " -v, --version             show the version\n"
 		return text
 
 	def _keyListener(self,key):
@@ -98,7 +136,7 @@ class ConfigManager:
 			self._ui.exit()
 
 	def _menuListener(self, button):
-		self._ui.setFooter("bla")
+		self._ui.setFooter("This function is not implemented yet.")
 
 	def _createMenu(self):
 		self._mainmenu = cm_menu.Menu()
@@ -116,9 +154,9 @@ class ConfigManager:
 		self._plugins = self._b3parser.getPlugins()
 		for name in self._plugins:
 			plugin = self._plugins[name]
-			if plugin.getConfig() is not None:
+			if plugin.config is not None:
 				pmenu = cm_menu.Menu()
-				pmenu.setText(plugin.getName())
+				pmenu.setText(plugin.name)
 				pmenu.setButtonFunction(self._confPluginListener)
 				menu.addSubmenu(pmenu)
 
@@ -126,7 +164,7 @@ class ConfigManager:
 
 		menu = cm_menu.Menu()
 		menu.setText('(De-)Activate plugins')
-		menu.setButtonFunction(self._menuListener)
+		menu.setButtonFunction(self._activatePlugins)
 		self._mainmenu.addSubmenu(menu)
 
 		menu = cm_menu.Menu()
@@ -193,7 +231,7 @@ class ConfigManager:
 		else:
 			page = cm_tui.Page(self._ui, 'Configure '+menu.getText())
 			plugin = self._plugins[menu.getText()]
-			file = plugin.getConfig().replace('@conf',self._b3Confdir)
+			file = plugin.config.replace('@conf',self._b3Confdir)
 			file = file.replace('@b3',self._b3Dir)
 			name = menu.getText()
 		parser.loadFile(file)
@@ -257,6 +295,44 @@ class ConfigManager:
 		parser = self._pluginParser
 		parser.setSetData("b3","database",mysql)
 		parser.saveFile()
+
+	def _activatePlugins(self, menu):
+		self._ui.setFooter(menu.getText())
+		page = cm_tui.Page(self._ui, menu.getText())
+		self._page = page
+		file = self._b3Confdir+'/b3.xml'
+		parser = cm_parser.Parser()
+		parser.loadFile(file)
+
+		page.addBlank()
+		dirlist = {}
+		dirlist[self._b3PluginsDir] = self._b3Confdir
+		dirlist[self._b3ExtDir] = self._b3ExtConfDir
+
+		plugins = parser.getAllPlugins(dirlist)
+
+		for plugin in plugins:
+			p = plugins[plugin]
+			page.addHeader(p.name)
+			if p.active == 0: selectedValue = 'not active'
+			else: selectedValue = 'active'
+			page.addRadioButton(p.name,'Status','active',selectedValue)
+			page.addRadioButton(p.name,'Status','not active',selectedValue)
+			if p.priority is None: priority = ''
+			else: priority = str(p.priority)
+			page.addBlank()
+			page.addInsertField('Priority',priority,p.name) #.type
+			page.addBlank()
+			page.addBlank()
+		page.addSaveButton(self._saveActivePluginsConfiguration)
+		self._ui.setBody(page.getPage())
+		self._parser = parser
+		self._allplugins = plugins
+
+	def _saveActivePluginsConfiguration(self):
+		self._ui.setFooter('save')
+		self._parser.changePluginActivation(self._page.getInsertValues(), self._allpluginsnconf)
+		self._parser.saveFile()
 
 	def exit(self, button = None):
 		self._ui.exit()

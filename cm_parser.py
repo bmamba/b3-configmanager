@@ -1,4 +1,5 @@
 import xml.dom.minidom
+import os
 import cm_plugin
 import cm_log
 
@@ -79,16 +80,52 @@ class Parser:
 		psection = psection.getElementsByTagName('plugin')
 		for pentry in psection:
 			name = pentry.getAttribute('name')
-			plugin = cm_plugin.Plugin(name)
+			plugin = cm_plugin.Plugin()
+			plugin.name = name
+			plugin.active = 1
 			priority = pentry.getAttribute('priority')
 			if priority != '':
-				plugin.setPriority(priority)
+				plugin.priority = priority
 			conf = pentry.getAttribute('config')
 			if conf != '':
-				plugin.setConfig(conf)
+				plugin.config = conf
 			plugins[name] = plugin
 			self._logger.debug('Found active plugin '+name)
 		return plugins
+
+	def getAllPlugins(self, dirlist):
+		self._logger.debug('Try to detect plugins in '+str(dirlist))
+		parser = Parser()
+		plugins = self.getPlugins()
+		infoPlugins = {}
+		for dir in dirlist:
+			direntries = os.listdir(dirlist[dir])
+			for entry in direntries:
+				if entry[len(entry)-4:len(entry)] == '.xml' and entry[0:3] != 'b3.':
+					self._logger.debug('Found plugin conf: '+entry)
+					parser.loadFile(dirlist[dir]+'/'+entry)
+					name = parser.getPluginName()
+					if name is not None:
+						info = cm_plugin.Plugin()
+						info.type = type
+						info.name = name
+						info.path = dir+'/'+name+'.py+'
+						info.config = dirlist[dir]+'/'+entry
+						if plugins.has_key(name):
+							info.active = 1
+							info.priority = plugins[name].priority
+							self._logger.debug('Plugin '+name+' is active')
+						infoPlugins[name] = info
+		return infoPlugins
+
+	def getPluginName(self):
+		configurations = self._xml.getElementsByTagName('configuration')
+		for conf in configurations:
+			name = conf.getAttribute('plugin')
+			if name is not None:
+				self._logger.debug('Found name of plugin: '+name)
+				return name
+		return None
 
 	def getPluginConf(self):
 		pluginConf = {}
@@ -132,6 +169,37 @@ class Parser:
 										self._logger.debug('Changing '+nameSection+' - '+name+'; old value: '+textnode.data+', new value: '+newSettings[nameSection][name]['value'])
 										textnode.data = newSettings[nameSection][name]['value']
 
+	def changePluginActivation(self, newSettings, allplugins):
+		configurations = self._xml.getElementsByTagName('configuration')
+		for conf in configurations:
+			if conf.nodeType == conf.ELEMENT_NODE:
+				sections = conf.getElementsByTagName('plugins')
+				for section in sections:
+					nodes = section.getElementsByTagName('plugin')
+					for node in nodes:
+						name = node.getAttribute('name')
+						self._logger.debug('Checking plugin '+name)
+						if newSettings.has_key(name):
+							if newSettings[name]['Status']['value'] == 'not active':
+								self._logger.debug('Remove plugin '+name)
+								section.removeChild(node)
+							if newSettings[name]['Priority']['value'] != node.getAttribute('priority'):
+								if newSettings[name]['Priority']['value'] != '':
+									self._logger.debug('Changing priority of '+name)
+									node.setAttribute('priority',newSettings[name]['Priority']['value']) 
+								else:
+									self._logger.debug('Removing priority from '+name)
+									node.removeAttribute('priority')
+					for name in newSettings:
+						if newSettings[name]['Status']['value'] == 'active' and allplugins[name].active == 0:
+							self._logger.debug('Activate '+name)
+							node = self.createNode('plugin')
+							node.setAttribute('name',name)
+							node.setAttribute('config',allplugins[name].config)
+							if newSettings[name]['Priority']['value'] != '':
+								node.setAttribute('priority',newSettings[name]['Priority']['value'])
+							section.appendChild(node)
+
 	def getPluginExtraConf(self):
 		if self._extraxml == None:
 			return None
@@ -163,4 +231,10 @@ class Parser:
 												pluginConf[nameSection][name]['input']['values'][value.getAttribute('name')] = value.getAttribute('value')
 
 		return pluginConf
+
+	def createNode(self,type):
+		impl = xml.dom.getDOMImplementation()
+		newdoc = impl.createDocument(None, 'nt', None)
+		node = newdoc.createElement(type)
+		return node
 

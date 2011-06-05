@@ -134,9 +134,9 @@ class Page:
 			self._radioGroup = {}
 		if section not in self._radioGroup:
 			self._radioGroup[section] = {}
-			self.addText(section)
 		if name not in self._radioGroup[section]:
 			self._radioGroup[section][name] = []
+			self.addText(name)
 		rbutton = urwid.RadioButton(self._radioGroup[section][name],value)
 		if value == selectedValue:
 			rbutton.toggle_state()
